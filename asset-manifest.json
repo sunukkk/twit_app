@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/twit_app/static/css/main.61fa4594.css",
+    "main.js": "/twit_app/static/js/main.d3320bd3.js",
+    "index.html": "/twit_app/index.html",
+    "main.61fa4594.css.map": "/twit_app/static/css/main.61fa4594.css.map",
+    "main.d3320bd3.js.map": "/twit_app/static/js/main.d3320bd3.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.61fa4594.css",
+    "static/js/main.d3320bd3.js"
+  ]
+}
