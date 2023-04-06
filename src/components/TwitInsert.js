@@ -72,10 +72,10 @@ function TwitInsert({userObj}) {
         <input type="text" placeholder="What's on yoru mind?" value={twit} onChange={onChange} maxLength={120} className='InsertInput__input'/>
         <input type="submit" value = '&rarr;' className='InsertInput__arrow'/>
       </div>
-      <label htmlFor="" className='InsertInput__label'>
+      <label htmlFor="attach-file" className='InsertInput__label'>
         <span>Add Photos<FontAwesomeIcon icon="fa-solid fa-plus" />
           <input type="file" accept='image/*' onChange={onFilechange}
-             id='attach-file' style={{opacity:0}}/>
+             id='attach-file' style={{opacity:0, width:0, height:0}}/>
         </span>
       </label>
       {attachment &&(
