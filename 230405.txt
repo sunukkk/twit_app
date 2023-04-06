@@ -1,0 +1,160 @@
+230405
+
+* 'profile' 에서 내가 쓴 twit만 보이게 하려고 함.
+
+1. Router 에서 로그인한 사용자 정보 확인 가능
+
+  >> 기존 Home 컴포넌트에만 props 로 전달 했던 userObj 를
+       profile에도 보내줌
+
+  <Route path='/profile' element = {<Profiles userObj={userObj}/>} />
+
+
+2. 컬렉션의 여러 문서에 리슨 참고
+문서 참고: https://firebase.google.com/docs/firestore/query-data/listen?hl=ko&authuser=0
+
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+
+이전에 Home 컴포넌트에서 사용한것과 같음.
+내용일부 수정.
+
+수정된 useEffect 코드
+  useEffect(() => {
+    const q = query(collection(db, "twits"),
+                where("creatorId", "==", `${userObj.uid}`),      //------------> 조건설정 creatorID = userObj.uid
+                orderBy("createdAt","desc"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const newArray = [];
+      querySnapshot.forEach((doc) => {
+          newArray.push({...doc.data(), id:doc.id});
+      });
+      setTwits(newArray)
+    });
+  }, []);
+
+최하단 return 문
+      <div>
+      {twits.map(twit => (
+        <Twit key={twit.id} twitObj={twit} isOwner={twit.creatorId === userObj.uid} />
+      ))}
+      </div>
+ 추가.
+
+======================================= My Profile 누르면, 내가 쓴 twit만 모아서 볼수 있음
+
+3. 프로필업데이트 하려고 함. (현재는 displayName밖에없음, 다른속성있으면 변경가능.)
+
+프로필 관련 ui 추가
+      <form onSubmit={onSubmit}>
+        <input type="text" onChange={onChange} value={newDisplayName} placeholder='Display name'/>
+        <input type="submit" value = "Update Profile" />
+      </form>
+
+
+4. 업데이트 관련 모듈임포트 및 코드 수정
+
+참고 문서 : https://firebase.google.com/docs/auth/web/manage-users?hl=ko&authuser=0
+
+import { updateProfile } from "firebase/auth";
+
+  const onSubmit = async (e) =>{
+    e.preventDefault();
+    if(userObj.displayName !== newDisplayName){
+      await updateProfile(userObj,{
+        displayName:newDisplayName,
+        //photoURL:
+      });
+    }
+    console.log(userObj)
+  };
+
+  const onChange = (e) => {
+    const {target: {value}} = e;
+    setNewDisplayName(value);
+  };
+
+=============================== console.log(userObj) 했을때, displayName 바뀌었는지 확인
+
+5. Navigation.js 컴포넌트에서, ~~'s Profile 로 사용자이름 보이게 하려고 함.
+
+AppRouter.js 에서 navigation 으로 userObj를 props로 전달
+
+수정된 AppRouter.js 및 Navigation
+function AppRouter({ isLoggedIn, userObj }) {
+
+  return (
+    <BrowserRouter>
+      {isLoggedIn && <Navigation userObj={userObj} />}
+      <Routes>
+        {isLoggedIn ? (
+          <>
+            <Route path='/' element = {<Home userObj={userObj} />} />
+            <Route path='/profile' element = {<Profiles userObj={userObj}/>} />
+          </>
+        ) : (
+          <Route path='/' element = {<Auth />} />
+        )}
+      </Routes>
+    </BrowserRouter>
+  )
+}
+
+export default AppRouter
+
+
+import React from 'react'
+import { Link } from 'react-router-dom'
+
+function Navigation({userObj}) {
+  console.log("userObj -->", userObj)
+  return (
+    <nav>
+      <ul>
+        <li><Link to={'/'}>Home</Link></li>
+        <li><Link to={'/profile'}>{userObj.displayName}'s profile</Link></li>
+      </ul>
+    </nav>
+  )
+}
+
+export default Navigation
+
+=================================== Navigation 에서 프로필 변경후 새로고침하면 바뀌는것 확인가능
+                                                                 (자동 새로고침 나중에 ㅎ)
+
+
+6. 로딩창 구현
+
+  return (
+    <>
+    {init ? (
+      <AppRouter isLoggedIn = {isLoggedIn} userObj={userObj}/>
+    ):(
+      "initializing..."
+    )}
+    
+    <footer>&copy; {new Date().getFullYear()} Twit app</footer>
+    </>
+  );
+
+
+7. isLoggedIn 초기값 false, 로딩다되면 init true로
+  useEffect(() => {
+    onAuthStateChanged(authService, (user) => {
+      if (user) {
+        setIsLoggedIn(user)
+        setUserObj(user)
+      } else {
+        setIsLoggedIn(false)
+      }
+      setInit(true)
+    });
+    
+  },[]);
+
+
+============================================= 초기실행시 로딩화면 확인가능
+
+8. fontawesome 리액트사용
+
+

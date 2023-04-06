@@ -1,0 +1,353 @@
+230404 김씨 빵꾸매꾸기 트위터앱
+
+* Twit.js *
+
+1. <form onSubmit={onSubmit}>
+     <input type="text" onChange={onChange} value={newTwit} required />
+     <input type="submit" value = "Update twit" />
+    </form>
+    <button onClick={toggleEditing}>Cancel</button>
+   
+   >> (편집 버튼 누른 다음 나오는) Update 버튼 만들기.
+        바뀌는 내용은 onChange 함수,
+        value는 이후 변수로 만들어 줄 newTwit
+
+
+2.  const [newTwit, setNewTwit] = useState(text)
+
+   >> 값을 저장할 useState만들어줌. 내용은 이전 트윗의 내용인 text
+
+
+
+3.  const onChange = e => {
+    const {target:{value}} = e
+    setNewTwit(value);
+  }
+
+   >> onChange함수 만들어줌.   
+
+
+
+4. 문서에서 가져온 내용 수정
+const onSubmit = async(e) =>{
+    e.preventDefault();
+    const newTwitRef = doc(db, "twits", id);
+
+    await updateDoc(newTwitRef, {
+    text: newTwit              //-------------------> text값은 newTwit의 값으로
+    createdAt : Date.now()  //-------------------> 수정된 시각관련
+    });
+setEditing(false);
+}
+
+   >> firestore 문서 > 데이터 추가 및 관리 
+       > 데이터 추가 중단 '문서 업데이트' 참고
+          https://firebase.google.com/docs/firestore/manage-data/add-data?hl=ko&authuser=0
+
+
+
+
+
+- 이미지 업로드 관련
+
+1. firebase 콘솔
+    * storage -> 시작하기 -> 테스트모드에서 시작 
+     -> 이전에 지정한 Cloud Storage 위치 지정되어있음. -> 완료
+
+
+2. 추가설정
+    - Storage - Rules 아래와같이 수정.
+ 
+rules_version = '2';
+ service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if 
+          request.auth != null;   
+    }
+  }
+}
+
+  >> .request.auth가 null 이 아닌경우 = 사용자 인증정보가 있을 경우.
+
+   참고 문서 https://firebase.google.com/docs/storage/web/start?hl=ko&authuser=0
+
+
+3. fbase.js 모듈 임포트
+import { getStorage } from "firebase/storage";
+export const storage = getStorage(app);
+추가
+
+
+
+4. Home.js
+onSubmit 하위
+<input type="file" accept='image/*' onChange={onFilechange}/> 
+            // -------------->> accept 속성 : 이미지만 허용, 변경시 onFileChange 함수
+
+
+
+5. const [attachment, setattachment] = useState("")  
+ //------------> 이미지 주소값이들어갈거기 때문에, boolean 값이 아니고, 문자열("")로 설정 
+ //------------> 공백문자("")일때 false
+
+   >> 파일 첨부 여부에 따라 이미지 관련 기능
+
+
+6. onSubmit 버튼 수정
+
+  return (
+    <>
+    <form onSubmit={onSubmit}>
+      <input type="text" placeholder="What's on yoru mind?" value={twit} onChange={onChange}/>
+      <input type="file" accept='image/*' onChange={onFilechange}/>
+      <input type="submit" value = 'Twit'/>
+      {attachment &&(    //---------------------------------------------> attatchment가 true일때(이미지 첨부되어있을때)
+        <div>
+          <img src={attachment} width="50" height ="50" />
+          <button onClick={onclearAttatchment}>Remove</button>
+        </div>
+      )}
+    </form>
+    <div>
+      {twits.map(twit => (
+      // <div key = {twit.id}>
+      //    <h4>{twit.text}</h4>
+      // </div>
+      
+      <Twit key={twit.id} twitObj={twit}  isOwner={twit.creatorId === userObj.uid}/>
+      ))}
+    </div>
+    </>
+  )
+
+
+7. onFilechange 함수 작성
+
+  const onFilechange = (e) =>{   
+    console.log('e->',e);       //  이벤트 객체 확인, target에 files의 0번 인덱스에 file있음.
+    const {target: {files}} = e;
+    const theFile = files[0]
+    console.log('theFile ->', theFile)       // theFile 확인, 
+  }
+
+
+8.  const reader = new FileReader();
+    reader.onloadend = (finishedEvent) =>{
+      console.log('f.e =>', finishedEvent)
+      const {currentTarget:{result}} = finishedEvent;
+      setAttachment(result);
+    }
+    reader.readAsDataURL(theFile)
+
+   FileReader 브라우저api 사용.
+   업로드 하려는 파일을 보여주려면 필요한 api.
+   FileReader 의 이벤트객체 (finishedEvent로 설정), reader객체의 로드가 끝났을때(onloadend)
+   이 이벤트객체의 currentTarget의 result값(이미지가 저장된 주소)을 attatchment의 값으로 저장.
+    reader.readAsDataURL(theFile) 이미지가 저장된 주소를 문자열로 변환해주는 메서드.
+
+
+
+   
+9.  const onclearAttatchment = (e) =>{
+      setAttachment('');
+    }  
+  
+ >> Attachment 비움. (첨부파일삭제)
+
+==============================   파일첨부, 첨부파일삭제
+
+
+10. firebase Storage 스토리지에 저장.
+    firebase Database에서는 문서 생성할때 자동으로 id값 생성해주지만,
+    firebase Storage는 그렇지 않음. 
+    id생성해주는 과정 필요, id값 생성해주는 라이브러리 설치. (범용 고유식별자 생성 라이브러리)
+    (uuid : universal unique id)
+    npm install uuid
+    package.json uuid 9.0.0 확인
+    https://github.com/uuidjs/uuid
+    import { v4 as uuidv4 } from 'uuid';
+    uuidv4(); // ⇨ '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
+
+
+
+11. firebase Storage 문서 - 파일업로드 - 문자열에서 업로드
+    https://firebase.google.com/docs/storage/web/upload-files?hl=ko&authuser=0
+
+    Home.js
+    import { getStorage, ref, uploadString } from "firebase/storage"; 추가
+    getStorage는 이전에 fbase에서 getStorage를 storage 로 쓰기로 했으니까, 
+    import { db, storage } from 'fbase'; 와 같이 수정.
+
+
+
+12. onSubmit 구문 수정.
+문서중 내용
+const message4 = 'data:text/plain;base64,5b6p5Y+344GX44G+44GX44Gf77yB44GK44KB44Gn44Go44GG77yB';
+uploadString(storageRef, message4, 'data_url').then((snapshot) => {
+});
+
+messeage4 : 문서에서 정한 임의의 이미지 주소
+uploadString(storageRef, message4, 'data_url').then((snapshot) 에서 messeage4의 자리에 이미지가 저장된 주소를 넣으면 됨.
+
+const storageRef = ref(storage, 'some-child')
+'some-child' 에 서버에 저장되는 주소를 설정해주면됨.
+이때 storage에서는 자동으로 설정해주지 않기 때문에, uuid사용.
+userObj.uid (현재 로그인된 유저) 하위에 uuid를 통해 고유식별자 부여.
+
+수정한 onSubmit 코드
+  const onSubmit = async (e) => {
+    e.preventDefault()
+
+    try {
+      const storageRef = ref(storage, `${userObj.uid}/${uuidv4()}`);    // 
+      
+      const response = uploadString(storageRef, attachment, 'data_url') 
+      console.log('response ->>', response)
+
+      const docRef = await addDoc(collection(db, "twits"), {
+        text: twit,
+        createdAt: Date.now(),
+        creatorId: userObj.uid
+      });
+      console.log("Document written with ID: ", docRef.id);
+    } catch (e) {
+      console.error("Error adding document: ", e);
+    }
+    setTwit("");
+  }
+
+
+
+================= 첨부파일 트윗했을때, firebase Storage 콘솔에서 확인가능
+
+
+
+13. 데이터 다운로드 관련
+업로드한 이미지를 앱 페이지에서 보여주기 위해, 서버에저장된 이미지 다운로드 받아야함.
+문서 참고 : https://firebase.google.com/docs/storage/web/download-files?hl=ko&authuser=0
+
+getDownloadURL 다운로드할 url 생성.
+getDownloadURL(ref(storage, 'images/stars.jpg'))
+'images/stars.jpg'에 다운로드 할 주소입력.
+
+수정한 onSubmit 코드
+
+  const onSubmit = async (e) => {
+    e.preventDefault()
+    
+    try {
+      let attachmentUrl = "";  
+      if(attachment !== ""){
+        const storageRef = ref(storage, `${userObj.uid}/${uuidv4()}`);
+        const response = await uploadString(storageRef, attachment, 'data_url'); 
+        console.log('response ->>', response)
+        attachmentUrl = await getDownloadURL(ref(storage, response.ref));
+      }
+      const docRef = await addDoc(collection(db, "twits"), {
+        text: twit,
+        createdAt: Date.now(),
+        creatorId: userObj.uid,
+        attachmentUrl
+      });
+      console.log("Document written with ID: ", docRef.id);
+    } catch (e) {
+      console.error("Error adding document: ", e);
+    }
+    setTwit("");
+    setAttachment("");
+  }
+
+========================= 트윗하면 서버에 이미지 저장됨.
+
+
+
+14. 트위터 내용중에 사진 나오도록 return 문 수정
+
+    여기서부터 밥먹고와서 쓴거라 확실하지 않음.
+    안되거나 이상하면 ai쌤 모셔서 면담 ㄱ
+
+
+Twit.js
+  
+  return (
+  
+    <div>
+      {editing ? (
+        <>
+          <form onSubmit={onSubmit}>
+            <input type="text" onChange={onChange} value={newTwit} required />
+            <input type="submit" value = "Update twit" />
+          </form>
+          <button onClick={toggleEditing}>Cancel</button>
+        </>
+      ) : (
+        <>
+          <h4>{text}</h4>
+          <img src={attachmentUrl} width="50" height="50" alt="" />
+          {isOwner && (
+            <>
+              <button onClick={onDeleteClick}>Delete Twit</button>
+              <button onClick={toggleEditing}>Edit Twit</button>
+            </>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+  >> img 주소가 attachmentUrl인데, Twit.js 상단에 props 받아올때 attachmentUrl 추가해줘야함
+
+const {twitObj: {text,id,attachmentUrl}, isOwner} = props;
+
+
+================================== 이전 트윗들에 사진 보임
+
+
+
+15. 트윗 삭제를 하면, 트윗 문서만 삭제되고, storage에 따로 저장된 이미지는 삭제 안됨.
+     삭제버튼을 누르면 database에 저장된 문서, storage에 따로 저장된 이미지 함께 삭제되도록 코드수정
+
+문서참고 : https://firebase.google.com/docs/storage/web/delete-files?hl=ko&authuser=0
+
+문서내용중 getStorage, ref, deleteObject 임포트 하라고 되어있는데,
+이전과 마찬가지로 getSorage 는 fbase.js 에서 storage로 export했으니까
+storage 로 임포트.
+
+const desertRef = ref(storage, 'images/desert.jpg');
+'images/desert.jpg' 자리에 삭제할 주소 써주면 됨. (storage 경로)
+storage경로는 attatchmentUrl로 props 받아옴.
+Home.js 에서  <Twit key={twit.id} twitObj={twit} isOwner={twit.creatorId === userObj.uid}/>
+Twit.js 에서  const {twitObj: {text,id,attachmentUrl}, isOwner} = props; 
+                                 (구조분해할당)attachmentURL 위치 주의
+
+deleteObject(desertRef).then(() => {
+}).catch((error) => {
+});
+
+deleteObject(desertRef) 이후 지움( 왜지운지 모름 만약에 error 나면 그냥 지나간단 마인드인듯) 
+await 붙여서 deleteObject() 함수 완료될때까지 기다렸다가 다음코드 실행하도록 함.
+
+
+수정된 상단 임포트, onDelteClick 코드
+
+import React, { useState } from 'react'
+import { doc, deleteDoc, updateDoc } from "firebase/firestore";
+import { db, storage } from 'fbase';
+import { ref, deleteObject } from "firebase/storage";
+
+----------
+
+const onDeleteClick = async () => {
+    const ok = window.confirm("삭제하시겠습니까?")
+    if (ok) {
+      await deleteDoc(doc(db, "twits", `/${id}`));
+      if (attachmentUrl !== "") {
+        const desertRef = ref(storage, attachmentUrl);
+        await deleteObject(desertRef);  // -----------------> 문서내용참고하여 작성.
+      }
+    }
+  };
+
+

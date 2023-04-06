@@ -1,25 +1,47 @@
-import logo from './logo.svg';
-import './App.css';
+import AppRouter from 'AppRouter';
+import { useEffect, useState } from 'react';
+import { authService } from 'fbase';
+import { onAuthStateChanged } from "firebase/auth";
+
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { fas } from '@fortawesome/free-solid-svg-icons'
+import { faTwitter, faGoogle, faGithub } from '@fortawesome/free-brands-svg-icons'
+
+library.add(fas, faTwitter, faGoogle, faGithub)
 
 function App() {
+  const [init, setInit] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userObj, setUserObj] = useState(null);
+
+  useEffect(() => {
+    onAuthStateChanged(authService, (user) => {
+      if (user) {
+        setIsLoggedIn(user)
+        setUserObj(user)
+      } else {
+        setIsLoggedIn(false)
+      }
+      setInit(true)
+    });
+    
+  },[]);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <>
+    {init ? (
+      <AppRouter isLoggedIn = {isLoggedIn} userObj={userObj}/>
+    ):(
+      "initializing..."
+    )}
+    
+
+    </>
   );
 }
 
 export default App;
+
+//*********************************************************************************
+//*********************  useCallBack 함수 나중에 다 붙여주기  *********************
+//*********************************************************************************

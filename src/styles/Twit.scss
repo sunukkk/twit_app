@@ -1,0 +1,57 @@
+.twit{
+  position: relative;
+  width: 100%;
+  min-height: 80px;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  background-color: #fff;
+  margin-bottom: 50px;
+  padding: 30px 20px;
+  border-radius: 10px;
+  color: rgba(0, 0, 0, 0.8);
+  margin-top: 20px;
+  h4{
+    font-size: 14px;
+  }
+  
+  img{
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 70px;
+    height: 70px;
+    border-radius: 10px;
+  }
+
+  &>span{
+    color: rgba(127, 210, 255, 0.8);
+    position: absolute;
+    top: -20px;
+    right: 0;
+    font-size: 11px;
+  }
+
+  .twit__actions{
+    position: absolute;
+    left: 0;
+    font-size: 12px;
+    bottom: -20px;
+
+    span{
+      color: rgba(127, 210, 255, 0.8);
+      padding: 0 5px;
+      cursor: pointer;
+      
+      
+    }
+    .twitEdit{
+      .formBtn{
+        cursor: pointer;
+        margin-top: 15px;
+        margin-bottom: 5px;
+      }
+    }
+  }
+}
